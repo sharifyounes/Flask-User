@@ -12,8 +12,8 @@ from flask import current_app, render_template
 
 from sendgrid.helpers.mail import CustomArg, Content, Email, Mail
 
-def send_email(*args)
-    if app.config["mail"] == "sendgrid":
+def send_email(*args):
+    if current_app.config["mail"] == "sendgrid":
         sg_send_email(*args)
     else:
         flask_send_email(*args)
@@ -22,15 +22,15 @@ def sg_send_email(recipient, subject, html_message, text_message, typ):
     """ Send email from default sender to 'recipient' using SendGrid """
     mail = Mail()
     
-    sg = app.config["sendgrid_api_client"]
-    from_addr = app.config["MAIL_FROM_ADDR"]
-    friendly_from = app.config["MAIL_FRIENDLY_FROM"]
+    sg = current_app.config["sendgrid_api_client"]
+    from_addr = current_app.config["MAIL_FROM_ADDR"]
+    friendly_from = current_app.config["MAIL_FRIENDLY_FROM"]
     mail.set_from(Email(email=from_addr, name=friendly_from))
     mail.set_subject(subject)
     mail.add_content(Content(type="text/plain", value=text_message))
     mail.add_content(Content(type="text/html", value=html_message))
 
-    send_token = app.token_manager.get_next_token()
+    send_token = current_app.token_manager.get_next_token()
     mail.add_custom_arg(CustomArg(key="token", value=send_token))
 
     meta = {"type": typ}
