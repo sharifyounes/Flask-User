@@ -12,7 +12,13 @@ from flask import current_app, render_template
 
 from sendgrid.helpers.mail import CustomArg, Content, Email, Mail
 
-def send_email(recipient, subject, html_message, text_message, typ):
+def send_email(*args)
+    if app.config["mail"] == "sendgrid":
+        sg_send_email(*args)
+    else:
+        flask_send_email(*args)
+    
+def sg_send_email(recipient, subject, html_message, text_message, typ):
     """ Send email from default sender to 'recipient' using SendGrid """
     mail = Mail()
     
@@ -46,7 +52,7 @@ def _render_email(filename, **kwargs):
 
     return (subject, html_message, text_message)
 
-def _send_email(recipient, subject, html_message, text_message):
+def flask_send_email(recipient, subject, html_message, text_message, typ):
     """ Send email from default sender to 'recipient' """
 
     class SendEmailError(Exception):
