@@ -111,6 +111,7 @@ setup(
         'Flask-Mail',
         'Flask-SQLAlchemy',
         'Flask-WTF',
+        'sendgrid'
     ],
     test_suite="flask_user.tests.run_tests",
     classifiers=[
