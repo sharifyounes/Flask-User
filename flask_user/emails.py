@@ -5,10 +5,34 @@
     :author: Ling Thio (ling.thio@gmail.com)
     :license: Simplified BSD License, see LICENSE.txt for more details."""
 
+import json
 import smtplib
 import socket
 from flask import current_app, render_template
 
+from sendgrid.helpers.mail import CustomArg, Content, Email, Mail
+
+def send_email(recipient, subject, html_message, text_message, typ):
+    """ Send email from default sender to 'recipient' using SendGrid """
+    mail = Mail()
+    
+    sg = app.config["sendgrid_api_client"]
+    from_addr = app.config["MAIL_FROM_ADDR"]
+    friendly_from = app.config["MAIL_FRIENDLY_FROM"]
+    mail.set_from(Email(email=from_addr, name=friendly_from))
+    mail.set_subject(subject)
+    mail.add_content(Content(type="text/plain", value=text_message))
+    mail.add_content(Content(type="text/html", value=html_message))
+
+    send_token = app.token_manager.get_next_token()
+    mail.add_custom_arg(CustomArg(key="token", value=send_token))
+
+    meta = {"type": typ}
+    mail.add_custom_arg(CustomArg(key="meta", value=json.dumps(meta)))
+
+    response = sg.client.mail.send.post(request_body=mail.get())
+    print response
+    
 def _render_email(filename, **kwargs):
     # Render subject
     subject = render_template(filename+'_subject.txt', **kwargs)
@@ -22,7 +46,7 @@ def _render_email(filename, **kwargs):
 
     return (subject, html_message, text_message)
 
-def send_email(recipient, subject, html_message, text_message):
+def _send_email(recipient, subject, html_message, text_message):
     """ Send email from default sender to 'recipient' """
 
     class SendEmailError(Exception):
@@ -84,7 +108,7 @@ def send_confirm_email_email(user, user_email, confirm_email_link):
             confirm_email_link=confirm_email_link)
 
     # Send email message using Flask-Mail
-    user_manager.send_email_function(email, subject, html_message, text_message)
+    user_manager.send_email_function(email, subject, html_message, text_message, "confirm email")
 
 def send_forgot_password_email(user, user_email, reset_password_link):
     # Verify certain conditions
@@ -104,7 +128,7 @@ def send_forgot_password_email(user, user_email, reset_password_link):
             reset_password_link=reset_password_link)
 
     # Send email message using Flask-Mail
-    user_manager.send_email_function(email, subject, html_message, text_message)
+    user_manager.send_email_function(email, subject, html_message, text_message, "forgot password")
 
 def send_password_changed_email(user):
     # Verify certain conditions
@@ -125,7 +149,7 @@ def send_password_changed_email(user):
             app_name=user_manager.app_name)
 
     # Send email message using Flask-Mail
-    user_manager.send_email_function(email, subject, html_message, text_message)
+    user_manager.send_email_function(email, subject, html_message, text_message, "password changed")
 
 def send_registered_email(user, user_email, confirm_email_link):    # pragma: no cover
     # Verify certain conditions
@@ -145,7 +169,7 @@ def send_registered_email(user, user_email, confirm_email_link):    # pragma: no
             confirm_email_link=confirm_email_link)
 
     # Send email message using Flask-Mail
-    user_manager.send_email_function(email, subject, html_message, text_message)
+    user_manager.send_email_function(email, subject, html_message, text_message, "registered")
 
 def send_username_changed_email(user):  # pragma: no cover
     # Verify certain conditions
@@ -166,7 +190,7 @@ def send_username_changed_email(user):  # pragma: no cover
             app_name=user_manager.app_name)
 
     # Send email message using Flask-Mail
-    user_manager.send_email_function(email, subject, html_message, text_message)
+    user_manager.send_email_function(email, subject, html_message, text_message, "username changed")
 
 def send_invite_email(user, accept_invite_link):
     user_manager = current_app.user_manager
@@ -180,4 +204,4 @@ def send_invite_email(user, accept_invite_link):
             accept_invite_link=accept_invite_link)
 
     # Send email message using Flask-Mail
-    user_manager.send_email_function(user.email, subject, html_message, text_message)
+    user_manager.send_email_function(user.email, subject, html_message, text_message, "invite")
