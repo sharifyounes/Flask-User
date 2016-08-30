@@ -10,7 +10,7 @@ import smtplib
 import socket
 from flask import current_app, render_template
 
-from sendgrid.helpers.mail import CustomArg, Content, Email, Mail
+from sendgrid.helpers.mail import CustomArg, Content, Email, Mail, Personalization
 
 def send_email(*args):
     if current_app.config["mail"] == "sendgrid":
@@ -21,12 +21,17 @@ def send_email(*args):
 def sg_send_email(recipient, subject, html_message, text_message, typ):
     """ Send email from default sender to 'recipient' using SendGrid """
     mail = Mail()
+
+    p = Personalization()
+    p.add_to(Email(recipient))
+    mail.add_personalization(p)
+
+    mail.set_subject(subject)
     
-    sg = current_app.config["sendgrid_api_client"]
     from_addr = current_app.config["MAIL_FROM_ADDR"]
     friendly_from = current_app.config["MAIL_FRIENDLY_FROM"]
     mail.set_from(Email(email=from_addr, name=friendly_from))
-    mail.set_subject(subject)
+
     mail.add_content(Content(type="text/plain", value=text_message))
     mail.add_content(Content(type="text/html", value=html_message))
 
@@ -36,8 +41,9 @@ def sg_send_email(recipient, subject, html_message, text_message, typ):
     meta = {"type": typ}
     mail.add_custom_arg(CustomArg(key="meta", value=json.dumps(meta)))
 
+    sg = current_app.config["sendgrid_api_client"]
     response = sg.client.mail.send.post(request_body=mail.get())
-    print response
+
     
 def _render_email(filename, **kwargs):
     # Render subject
