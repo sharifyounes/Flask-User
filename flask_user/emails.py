@@ -31,7 +31,8 @@ def sg_send_email(recipient, subject, html_message, text_message, typ):
     from_addr = current_app.config["MAIL_FROM_ADDR"]
     friendly_from = current_app.config["MAIL_FRIENDLY_FROM"]
     mail.set_from(Email(email=from_addr, name=friendly_from))
-
+    mail.add_custom_arg(CustomArg(key="from_addr", value=from_addr))
+    
     mail.add_content(Content(type="text/plain", value=text_message))
     mail.add_content(Content(type="text/html", value=html_message))
 
@@ -40,7 +41,7 @@ def sg_send_email(recipient, subject, html_message, text_message, typ):
 
     meta = {"type": typ}
     mail.add_custom_arg(CustomArg(key="meta", value=json.dumps(meta)))
-
+    
     sg = current_app.config["sendgrid_api_client"]
     response = sg.client.mail.send.post(request_body=mail.get())
 
