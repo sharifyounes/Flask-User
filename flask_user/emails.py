@@ -22,28 +22,45 @@ def sg_send_email(recipient, subject, html_message, text_message, typ):
     """ Send email from default sender to 'recipient' using SendGrid """
     mail = Mail()
 
+    # set the to address
     p = Personalization()
     p.add_to(Email(recipient))
     mail.add_personalization(p)
 
+    # add subject line
     mail.set_subject(subject)
-    
+
+    # create from_addr and friendly_from and add
+    # from_addr to unique args so we can pull out
+    # sending_domain in the email event webhandler
     from_addr = current_app.config["MAIL_FROM_ADDR"]
     friendly_from = current_app.config["MAIL_FRIENDLY_FROM"]
     mail.set_from(Email(email=from_addr, name=friendly_from))
     mail.add_custom_arg(CustomArg(key="from_addr", value=from_addr))
-    
-    mail.add_content(Content(type="text/plain", value=text_message))
-    mail.add_content(Content(type="text/html", value=html_message))
 
+    # generate the token and add it as a unique arg
     send_token = current_app.token_manager.get_next_token()
     mail.add_custom_arg(CustomArg(key="token", value=send_token))
 
-    meta = {"type": typ}
+    # make token substitutes in the content
+    _TOKEN_PARAMS = ("[[ TOKEN ]]", "[[TOKEN]]", "[[ token ]]", "[[token]]")
+    for _PARAM in _TOKEN_PARAMS:
+        text_message = text_message.replace(_PARAM, send_token)
+        html_message = html_message.replace(_PARAM, send_token)
+
+    mail.add_content(Content(type="text/plain", value=text_message))
+    mail.add_content(Content(type="text/html", value=html_message))
+
+    # create and add the meta
+    meta = {
+        "type": typ,
+        "friendly_from": friendly_from
+    }
     mail.add_custom_arg(CustomArg(key="meta", value=json.dumps(meta)))
-    
+
+    # send 'er off!
     sg = current_app.config["sendgrid_api_client"]
-    response = sg.client.mail.send.post(request_body=mail.get())
+    sg.client.mail.send.post(request_body=mail.get())
 
     
 def _render_email(filename, **kwargs):
@@ -86,7 +103,7 @@ def flask_send_email(recipient, subject, html_message, text_message, typ):
         mail_engine.send(message)
 
     # Print helpful error messages on exceptions
-    except (socket.gaierror, socket.error) as e:
+    except (socket.gaierror, socket.error):
         raise SendEmailError('SMTP Connection error: Check your MAIL_SERVER and MAIL_PORT settings.')
     except smtplib.SMTPAuthenticationError:
         raise SendEmailError('SMTP Authentication error: Check your MAIL_USERNAME and MAIL_PASSWORD settings.')
