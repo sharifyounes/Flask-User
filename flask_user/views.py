@@ -630,7 +630,7 @@ def unauthenticated():
     """ Prepare a Flash message and redirect to USER_UNAUTHENTICATED_ENDPOINT"""
     # Prepare Flash message
     url = request.url
-    flash(_("You must be signed in to access '%(url)s'.", url=url), 'error')
+    flash(_("You must be signed in to access this page."), 'error')
 
     # quote the fully qualified url
     quoted_url = quote(url)
