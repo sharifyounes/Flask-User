@@ -1,4 +1,4 @@
-Dear User,
+Hi {{ user.first_name() }}!
 
 {% block message %}
 {% endblock %}
